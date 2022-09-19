@@ -1,11 +1,16 @@
-import discord
-from discord.ext import tasks
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import os
+import requests
+import time
 
 
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope="playlist-modify-public playlist-modify-private playlist-read-private"))
+
+discord = requests.session()
+discord.headers.update({
+    "Authorization": f"Bot {os.environ['DISCORD_BOT_TOKEN']}"
+})
 
 
 def extract_spotify_track(s):
@@ -65,41 +70,40 @@ def sync_spotify_playlist(playlist_id, new_tracks, limit=20):
         sp.playlist_remove_specific_occurrences_of_items(playlist_id, tracks_to_remove)
 
 
-class MyClient(discord.Client):
-    async def setup_hook(self) -> None:
-        # start the task to run in the background
-        self.my_background_task.start()
+def get_channel_messages(channel_id, limit):
+    # This is a stupid method and will probably break if there are under <limit> messages in the channel.
 
-    async def on_ready(self):
-        print(f'Logged in as {self.user} (ID: {self.user.id})')
-        print('------')
+    before = None
 
-    @tasks.loop(seconds=300)  # task runs every 5 minutes
-    async def my_background_task(self):
-        ch = self.get_channel(***REMOVED***)
+    messages = []
 
-        spotify_messages = []
+    while len(messages) < limit:
+        params = {
+            "limit": 100
+        }
+        if before:
+            params["before"] = before
 
-        # Messages come in out of order, so we need to sort them after the fact
-        async for message in ch.history(limit=1000):
-            if "spotify.com" in message.content:
-                spotify_messages.append(message)
+        r = discord.get(f"https://discord.com/api/channels/{channel_id}/messages", params=params)
+        if r.status_code == 429:
+            print("rate limited, waiting...")
+            time.sleep(2)
+        time.sleep(1)
 
-        # Ugly oneliner to get Spotify track IDs from messages, newest to oldest.
-        spotify_track_ids = list(filter(lambda item: item is not None, map(lambda msg: extract_spotify_track(msg.content), sorted(spotify_messages, key=lambda m: m.created_at, reverse=True))))
+        messages.extend(r.json())
 
-        # Synchronize the last 20 tracks
-        sync_spotify_playlist("***REMOVED***", spotify_track_ids[:20])
+        before = r.json()[-1]["id"]
 
-        print("done")
-
-    @my_background_task.before_loop
-    async def before_my_task(self):
-        await self.wait_until_ready()  # wait until the bot logs in
+    return messages
 
 
-intents = discord.Intents.default()
-intents.message_content = True
+if __name__ == "__main__":
+    spotify_messages = get_channel_messages(***REMOVED***, 1000)
 
-client = MyClient(intents=intents)
-client.run(os.environ["DISCORD_BOT_TOKEN"])
+    # Extract the Spotify links from each message, if there is one.
+    spotify_track_ids = list(filter(lambda item: item is not None, map(lambda msg: extract_spotify_track(msg["content"]), spotify_messages)))
+
+    # Synchronize the last 20 tracks
+    sync_spotify_playlist("***REMOVED***", spotify_track_ids[:20])
+
+    print("done")
