@@ -1,0 +1,25 @@
+org: alexyancey
+app: discordspotbot
+service: spotifybotalex
+
+frameworkVersion: '3'
+
+
+provider:
+  name: aws
+  runtime: python3.8
+  environment:
+    DISCORD_BOT_TOKEN: "***REMOVED***"
+    SPOTIPY_CLIENT_ID: "***REMOVED***"
+    SPOTIPY_CLIENT_SECRET: "***REMOVED***"
+    SPOTIPY_REDIRECT_URI: "http://127.0.0.1:9090"
+
+functions:
+  rateHandler:
+    handler: handler.run
+    events:
+      # Invoke Lambda function every hour
+      - schedule: rate(1 hour)
+
+plugins:
+  - serverless-python-requirements
