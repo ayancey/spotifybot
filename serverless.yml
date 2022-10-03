@@ -8,6 +8,7 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: python3.8
+  timeout: 120
   environment:
     DISCORD_BOT_TOKEN: "***REMOVED***"
     SPOTIPY_CLIENT_ID: "***REMOVED***"
