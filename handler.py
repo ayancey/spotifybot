@@ -1,6 +1,6 @@
 import datetime
 import logging
-import spotbot
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -9,10 +9,14 @@ logger.setLevel(logging.INFO)
 def run(event, context):
     import os
 
+    os.chdir('/tmp')
+
     if not os.path.exists(".cache"):
         print("writing cache file")
         with open(".cache", "w") as f:
             f.write("""{"access_token": "***REMOVED***", "token_type": "Bearer", "expires_in": 3600, "scope": "playlist-modify-public playlist-modify-private playlist-read-private", "expires_at": 1665083306, "refresh_token": "***REMOVED***vzLSNnv8us"}""")
+
+    import spotbot
 
     current_time = datetime.datetime.now().time()
     name = context.function_name

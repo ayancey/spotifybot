@@ -20,7 +20,7 @@ functions:
     handler: handler.run
     events:
       # Invoke Lambda function every hour
-      - schedule: rate(4 hours)
+      - schedule: rate(30 minutes)
 
 plugins:
   - serverless-python-requirements
